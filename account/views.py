@@ -3,13 +3,15 @@ import json
 import bcrypt
 import boto3
 
+from my_settings               import WEDIZ_SECRET
 from django.http               import JsonResponse
 from django.views              import View
 from django.core.validators    import validate_email
 from django.core.exceptions    import ValidationError
 
+from fund.models               import Maker
 from .models                   import User, UserGetInterest, ProfileInterest  
-from my_settings               import WEDIZ_SECRET
+
 from .utils                    import login_decorator
 
 class SignupView(View):
@@ -162,3 +164,32 @@ class ModifiedUserPhoto(View):
             return JsonResponse({"MESSAGE" : "SUCCESS", "photo_url" : photo_url}, status=200)
         else:
             return JsonResponse({"MESSAGE" : "FILES_NOT_FOUND"}, status=404)
+
+class MakerCreate(View):
+    @login_decorator
+    def get(self, request):
+        user = request.user
+        maker = Maker.objects.filter(user = user).values()
+        return JsonResponse({"data": list(maker) }, status=200)
+
+
+    @login_decorator
+    def post(self, request):
+        data = json.loads(request.body)
+        try:
+            request.user.is_maker = True
+            Maker.objects.create(
+                user            = request.user,
+                name            = data['name'],
+                kind            = data['kind'],
+                phone_number    = data['phone_number'],
+                is_agreed       = data['is_agreed'],
+            )
+            
+            return JsonResponse({"MESSAGE" : "SUCCESS"}, status=200)
+
+        except KeyError:
+            return JsonResponse({"MESSAGE" : "INVALILD_INPUT"}, status=400)
+
+        except IntegrityError:
+            return JsonResponse({"MESSAGE" : "USER_IS_ALREADY_MAKER(DUPLICATED)"}, status=409)

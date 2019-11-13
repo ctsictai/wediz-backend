@@ -39,3 +39,13 @@ class UserGetInterest(models.Model):
 
 	class Meta:
 		db_table = 'usergetinterests'
+        
+class Maker(models.Model):
+    user             = models.OneToOneField(User, on_delete=models.CASCADE, related_name='users')
+    name             = models.CharField(max_length=150)
+    kind             = models.CharField(max_length=150)
+    phone_number     = models.IntegerField()
+    is_agreed        = models.BooleanField()
+
+    class Meta:
+        db_table = 'makers'
