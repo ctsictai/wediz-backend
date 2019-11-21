@@ -9,7 +9,7 @@ from unittest.mock          import patch, MagicMock
 from io                     import BytesIO
 from django.core.files.base import ContentFile
 
-from account.models         import User, ProfileInterest, UserGetInterest, SocialPlatform
+from account.models         import User, ProfileInterest, UserGetInterest, SocialPlatform, Maker
 from my_settings            import WEDIZ_SECRET
 
 def create_image(storage, filename, size=(30,30), image_mode = 'RGB', image_format='PNG'):
@@ -58,6 +58,16 @@ class UserTest(TestCase):
             social       = SocialPlatform.objects.get(id=1),
             social_login_id = '1234'
         )
+
+        maker = Maker.objects.create(
+            id           = 1,
+            user         = test,
+            name         = "나길동",
+            kind         = "의류",
+            phone_number = "10202030",
+            is_agreed    = True
+        )
+        
 
         test_interest = ProfileInterest.objects.create(
             id                   = 100,
@@ -173,7 +183,43 @@ class UserTest(TestCase):
             response.json()['photo_url']
         )
 
+    def test_post_makercreate(self):
+        cl = Client()
+
+        test = {
+            "email" : 'c1234@na.com',
+            "password" : password,
+            "user_name" : "user_name",
+            "password" : password,
+            "is_agree" :  True,
+            "promotion" : True,
+            "is_maker" : False
+        }
+        response = cl.post("/account/signup", json.dumps(test), content_type='applications/json')
+        self.assertEqual(response.status_code, 200)
+        test = {"email" : 'c1234@na.com', "password" : password}
+        response = cl.post("/account/signin", json.dumps(test), content_type='applications/json')
+        valid_token = response.json()["VALID_TOKEN"]
+        test = {
+            "name"         : "안녕",
+            "kind"         : "com",
+            "phone_number" : "011123445",
+            "is_agreed"    : True
+        }
+        response = cl.post("/account/maker", json.dumps(test), **{"HTTP_AUTHORIZATION" : valid_token, "content_type" : "application/json"})
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_makercreate(self):
+        cl = Client()
+
+        test = {"email" : 'b1234@na.com', "password" : password}
+        response = cl.post("/account/signin", json.dumps(test), content_type='applications/json')
+        valid_token = response.json()["VALID_TOKEN"]
+        response = cl.get("/account/maker", **{"HTTP_AUTHORIZATION" : valid_token})
+        self.assertEqual(response.status_code, 200)
+
     def tearDown(self):
         UserGetInterest.objects.all().delete()
         User.objects.all().delete()
         ProfileInterest.objects.all().delete()
+        Maker.objects.all().delete()

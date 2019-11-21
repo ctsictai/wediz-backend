@@ -6,6 +6,7 @@ from .views      import (
                         ModifiedUserPhoto,
                         MakerCreate,
                         KakaoSigninView,
+                        MakerCreate
                         )
 urlpatterns = [
 	path('/signup', SignupView.as_view()),
