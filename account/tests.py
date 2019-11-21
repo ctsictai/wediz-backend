@@ -9,7 +9,7 @@ from unittest.mock          import patch, MagicMock
 from io                     import BytesIO
 from django.core.files.base import ContentFile
 
-from account.models         import User, ProfileInterest, UserGetInterest
+from account.models         import User, ProfileInterest, UserGetInterest, SocialPlatform
 from my_settings            import WEDIZ_SECRET
 
 def create_image(storage, filename, size=(30,30), image_mode = 'RGB', image_format='PNG'):
@@ -31,6 +31,15 @@ class UserTest(TestCase):
 
     def setUp(self):
         cl = Client()
+
+        platform_dicts ={'wediz':1, 'kakao':2, 'google':3}
+
+        for key, value in platform_dicts.items():
+            SocialPlatform(
+                id       = value,
+                platform = key,
+            ).save()
+
         test = User.objects.create(
             id        = 100,
             email     = 'b1234@na.com',
@@ -45,8 +54,11 @@ class UserTest(TestCase):
             major  = None,
             main_address = None,
             sub_address = None,
-            introduction = None
+            introduction = None,
+            social       = SocialPlatform.objects.get(id=1),
+            social_login_id = '1234'
         )
+
         test_interest = ProfileInterest.objects.create(
             id                   = 100,
             education_kids       = False,
@@ -69,6 +81,42 @@ class UserTest(TestCase):
         test        = {"email":'b1234@na.com', 'password' : password}
         response    = cl.post("/account/signin", json.dumps(test), content_type="application/json")
         valid_token = response.json()['VALID_TOKEN']
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"VALID_TOKEN" : valid_token})
+
+    def test_user_invalid_user_signin(self):
+        cl = Client()
+
+        test        = {"email":'b1231234@na.com', 'password' : '123password'}
+        response    = cl.post("/account/signin", json.dumps(test), content_type="application/json")
+        self.assertEqual(response.status_code, 401)
+
+    def test_user_invalid_password_signin(self):
+        cl = Client()
+
+        test        = {"email":'b1234@na.com', 'password' : '123password'}
+        response    = cl.post("/account/signin", json.dumps(test), content_type="application/json")
+        self.assertEqual(response.status_code, 401)
+
+
+
+    @patch('account.views.requests')
+    def test_kakao_signin(self, mocked_requests):
+        cl = Client()
+        mock_value_dict = {"id" : "1234", "kakao_account" : { "email" : "b1234@na.com"}}
+
+        class MockedResponse:
+            def json(self):
+                return mock_value_dict
+
+        mocked_requests.post = MagicMock(return_value = MockedResponse())
+        test = {
+            "social_login_id" : "1234",
+            "email" : "b1234@na.com",
+            "password" : password
+        }
+        response = cl.post('/account/kakaosignin', json.dumps(test),**{"HTTP_AUTHORIZATION":"1234","content_type":"application/json"})
+        valid_token = response.json()["VALID_TOKEN"]
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"VALID_TOKEN" : valid_token})
 
@@ -126,4 +174,6 @@ class UserTest(TestCase):
         )
 
     def tearDown(self):
+        UserGetInterest.objects.all().delete()
         User.objects.all().delete()
+        ProfileInterest.objects.all().delete()
