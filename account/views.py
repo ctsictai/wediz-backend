@@ -2,6 +2,7 @@ import jwt
 import json
 import bcrypt
 import boto3
+import requests
 
 from my_settings               import WEDIZ_SECRET
 from django.http               import JsonResponse
@@ -10,8 +11,8 @@ from django.core.validators    import validate_email
 from django.core.exceptions    import ValidationError
 
 from fund.models               import Maker
-from .models                   import User, UserGetInterest, ProfileInterest  
-
+from .models                   import User, UserGetInterest, ProfileInterest, SocialPlatform
+from my_settings               import WEDIZ_SECRET
 from .utils                    import login_decorator
 
 class SignupView(View):
@@ -66,7 +67,7 @@ class SigninView(View):
                 payload = {
                         "user_id"       : user_data.id,
                         "user_is_maker" : user_data.is_maker,
-                        "exp"           : WEDIZ_SECRET['exp_time'],
+                        "exp"      : WEDIZ_SECRET['exp_time'],
                         }
                 jwt_encode = jwt.encode(payload, WEDIZ_SECRET['secret'], algorithm="HS256")
                 token = jwt_encode.decode("utf-8") 
@@ -74,12 +75,48 @@ class SigninView(View):
 
             else:
                 return JsonResponse({"MESSAGE" : "INVALID_PASSWORD"}, status=401)
-        except ValidationError:
-            return JsonResponse({"MESSAGE" : "INVALID_EMAIL"}, status=401)
         except User.DoesNotExist:
-            return JsonResponse({"MESSAGE" : "INVALID_USER"}, status=404)
+            return JsonResponse({"MESSAGE" : "INVALID_USER"}, status=401)
         except KeyError:
             return JsonResponse({"MESSAGE" : "INVALID_INPUT"}, status=400)
+
+class KakaoSigninView(View):
+    def post(self, request):
+        kakao_token  = request.headers["Authorization"]
+        if not kakao_token:
+            return JsonResponse({"MESSAGE" : "INVALID_KAKAO_TOKEN"}, status=400)
+
+        headers      = ({'Authorization' : f"Bearer {kakao_token}"})
+        url          = "https://kapi.kakao.com/v1/user/me"
+        response     = requests.post(url, headers=headers, timeout=2)
+        user_data    = response.json()
+        try:
+            if User.objects.filter(social_login_id=user_data['id']).exists():
+                user = User.objects.get(social_login_id=user_data['id'])
+                payload = {
+                    "user_id"       : user.id,
+                    "kakao_id"      : user.social_login_id,
+                    "user_is_maker" : user.is_maker,
+                    "exp"      : WEDIZ_SECRET['exp_time']
+                    }
+                jwt_encode = jwt.encode(payload, WEDIZ_SECRET['secret'], algorithm="HS256")
+                return JsonResponse({"VALID_TOKEN" : jwt_encode.decode('utf-8')} , status=200)
+            else:
+                signup_user = User.objects.create(
+                    email     = user_data['kakao_account']['email'],
+                    social    = SocialPlatform.objects.get(id=2).id,
+                    social_login_id = user_data['id']
+                    )
+                payload = {
+                    "user_id"       : signup_user.id,
+                    "kakao_id"      : signup_user.social_login_id,
+                    "user_is_maker" : signup_user.is_maker,
+                    "exp"      : WEDIZ_SECRET['exp_time']
+                    }
+                jwt_encode = jwt.encode(payload, WEDIZ_SECRET['secret'], algorithm="HS256")
+                return JsonResponse({"VALID_TOKEN" : jwt_encode.decode('utf-8')}, status=200)
+        except ValueError:
+            return JsonResponse({"MESSAGE" : "INVALID_EMAIL"}, status=401)
 
 class ModifiedUserInfo(View):
     @login_decorator
@@ -185,11 +222,9 @@ class MakerCreate(View):
                 phone_number    = data['phone_number'],
                 is_agreed       = data['is_agreed'],
             )
-            
             return JsonResponse({"MESSAGE" : "SUCCESS"}, status=200)
 
         except KeyError:
             return JsonResponse({"MESSAGE" : "INVALILD_INPUT"}, status=400)
-
         except IntegrityError:
             return JsonResponse({"MESSAGE" : "USER_IS_ALREADY_MAKER(DUPLICATED)"}, status=409)

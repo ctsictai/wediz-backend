@@ -13,6 +13,12 @@ class ProfileInterest(models.Model):
     class Meta:
         db_table = 'profileinterests'
 
+class SocialPlatform(models.Model):
+    platform = models.CharField(max_length=20, default=1)
+
+    class Meta:
+        db_table = 'social_platform'
+
 class User(models.Model):
     email            = models.CharField(max_length=255, unique=True)
     user_name        = models.CharField(max_length=150, null=True, blank=True)
@@ -20,6 +26,8 @@ class User(models.Model):
     is_agree         = models.BooleanField(null=True)
     is_maker         = models.BooleanField(null=True)
     promotion        = models.BooleanField(null=True)
+    social           = models.ForeignKey(SocialPlatform, on_delete=models.CASCADE, null=True, related_name='user_social', default=1)
+    social_login_id  = models.CharField(max_length=100, null=True)
     profile_photo    = models.URLField(max_length=500, null=True, blank=True)
     company          = models.CharField(max_length=100, null=True, blank=True)
     company_position = models.CharField(max_length=50, null=True, blank=True)

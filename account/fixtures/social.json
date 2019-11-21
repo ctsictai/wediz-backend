@@ -1,0 +1,24 @@
+[
+    {
+        "model" : "account.socialplatform",
+        "pk"  : 1,
+        "fields" : {
+            "platform" : "wediz"
+        }
+    },
+    {
+        "model"   : "account.socialplatform",
+        "pk"    : 2,
+        "fields" : {
+            "platform" : "kakao"
+        }
+    },
+    {
+        "model"   : "account.socialplatform",
+        "pk"    : 3,
+        "fields"  : {
+            "platform"   : "google"
+        }
+    }
+]
+    
