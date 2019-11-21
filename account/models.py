@@ -23,6 +23,7 @@ class User(models.Model):
     email            = models.CharField(max_length=255, unique=True)
     user_name        = models.CharField(max_length=150, null=True, blank=True)
     password         = models.CharField(max_length=300, null=True, blank=True)
+    phone_number     = models.CharField(max_length=20, null=True)
     is_agree         = models.BooleanField(null=True)
     is_maker         = models.BooleanField(null=True)
     promotion        = models.BooleanField(null=True)

@@ -2,9 +2,8 @@ import jwt
 import json
 import bcrypt
 from django.http    import JsonResponse,HttpResponse
-from account.models import User, Maker
-from fund.models    import FundProject, FundMainAgreement, FundMainInformation, FundPolicy, FundMaker
-from my_settings    import WEDIZ_SECRET
+from account.models import User
+from my_settings  import WEDIZ_SECRET
 
 def login_decorator(func):
     def wrapper(self, request, *args, **kwargs): 
@@ -16,21 +15,14 @@ def login_decorator(func):
         
         try:
             data = jwt.decode(encode_token, WEDIZ_SECRET['secret'], algorithm='HS256') 
-            user = User.objects.select_related('users').get(id = data["user_id"])
-            request.user = user
-             
-            print(request.user)
-            if user.users.is_agreed == False:
-                return JsonResponse({"ERROR_CODE":"INVALID_MAKER"}, status = 403)
-
+            user = User.objects.get(id = data["user_id"])
+            request.user = user 
+        
         except jwt.DecodeError: 
             return JsonResponse({"ERROR_CODE" : "INVALID_TOKEN"}, status = 401) 
         
         except User.DoesNotExist:
-            return JsonResponse({"ERROR_CODE" : "UNKNOWN_USER"}, status = 401)
-        except Exception as e:
-            print(e)
-            return JsonResponse({"ERROR_CODE" : "UNKNOWN_USER"}, status = 401)
+            return JsonResponse({"ERROR_CODE" : "UNKNOWN_USER"}, status = 401) 
         
         return func(self, request, *args, **kwargs) 
     
