@@ -11,7 +11,7 @@ from django.core.validators    import validate_email
 from django.core.exceptions    import ValidationError
 
 from fund.models               import Maker
-from .models                   import User, UserGetInterest, ProfileInterest, SocialPlatform
+from .models                   import User, UserGetInterest, ProfileInterest, SocialPlatform, Maker
 from my_settings               import WEDIZ_SECRET
 from .utils                    import login_decorator
 
@@ -67,7 +67,7 @@ class SigninView(View):
                 payload = {
                         "user_id"       : user_data.id,
                         "user_is_maker" : user_data.is_maker,
-                        "exp"      : WEDIZ_SECRET['exp_time'],
+                        "exp"           : WEDIZ_SECRET['exp_time'],
                         }
                 jwt_encode = jwt.encode(payload, WEDIZ_SECRET['secret'], algorithm="HS256")
                 token = jwt_encode.decode("utf-8") 
@@ -97,7 +97,7 @@ class KakaoSigninView(View):
                     "user_id"       : user.id,
                     "kakao_id"      : user.social_login_id,
                     "user_is_maker" : user.is_maker,
-                    "exp"      : WEDIZ_SECRET['exp_time']
+                    "exp"           : WEDIZ_SECRET['exp_time']
                     }
                 jwt_encode = jwt.encode(payload, WEDIZ_SECRET['secret'], algorithm="HS256")
                 return JsonResponse({"VALID_TOKEN" : jwt_encode.decode('utf-8')} , status=200)
@@ -111,7 +111,7 @@ class KakaoSigninView(View):
                     "user_id"       : signup_user.id,
                     "kakao_id"      : signup_user.social_login_id,
                     "user_is_maker" : signup_user.is_maker,
-                    "exp"      : WEDIZ_SECRET['exp_time']
+                    "exp"           : WEDIZ_SECRET['exp_time']
                     }
                 jwt_encode = jwt.encode(payload, WEDIZ_SECRET['secret'], algorithm="HS256")
                 return JsonResponse({"VALID_TOKEN" : jwt_encode.decode('utf-8')}, status=200)
@@ -176,7 +176,7 @@ class ModifiedUserInfo(View):
 
 class ModifiedUserPhoto(View):
     aws_s3 = boto3.client(
-                's3', 
+                's3',
                 aws_access_key_id="AKIAUDP7QSUO4ZLJTVGZ",
                 aws_secret_access_key ="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",
             )
@@ -207,8 +207,7 @@ class MakerCreate(View):
     def get(self, request):
         user = request.user
         maker = Maker.objects.filter(user = user).values()
-        return JsonResponse({"data": list(maker) }, status=200)
-
+        return JsonResponse({"data": list(maker)}, status=200)
 
     @login_decorator
     def post(self, request):
@@ -225,6 +224,6 @@ class MakerCreate(View):
             return JsonResponse({"MESSAGE" : "SUCCESS"}, status=200)
 
         except KeyError:
-            return JsonResponse({"MESSAGE" : "INVALILD_INPUT"}, status=400)
+            return JsonResponse({"MESSAGE" : "INVALID_INPUT"}, status=400)
         except IntegrityError:
             return JsonResponse({"MESSAGE" : "USER_IS_ALREADY_MAKER(DUPLICATED)"}, status=409)

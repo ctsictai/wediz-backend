@@ -81,7 +81,6 @@ class FundMaker(models.Model):
 
     class Meta:
         db_table = "fundmakers"
-        
 
 class FundProject(models.Model):
     fund_main_agreement      = models.OneToOneField(FundMainAgreement, on_delete = models.CASCADE)
@@ -99,7 +98,6 @@ class FundReward(models.Model):
     price = models.IntegerField(null= True)
     introduction = models.CharField(max_length = 300, null = True)
     limitation = models.IntegerField(null = True)
-    delivery = models.OneToOneField(RewardDelivery, on_delete = models.CASCADE)
 
     class Meta:
         db_table = "fundrewards"

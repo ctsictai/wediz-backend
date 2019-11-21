@@ -7,7 +7,7 @@ from django.test     import TestCase, Client
 from unittest.mock          import patch, MagicMock
 from fund.views      import *
 from fund.models     import FundProject, FundMainAgreement, Document, FundMainInformation, FundCategory
-from account.models  import User, ProfileInterest, UserGetInterest, Maker
+from account.models  import User, ProfileInterest, UserGetInterest, Maker, SocialPlatform
 
 
 password = '1234'
@@ -18,6 +18,14 @@ decode_password = hashed_password.decode('utf-8')
 class FundProjectTest (TestCase):
 
     def setUp(self):
+        platform_dicts ={'wediz':1, 'kakao':2, 'google':3}
+
+        for key, value in platform_dicts.items():
+            SocialPlatform(
+                id       = value,
+                platform = key,
+            ).save()
+
         user = User.objects.create(
             id               = 100,
             email            = 'b1234@na.com',
@@ -32,7 +40,9 @@ class FundProjectTest (TestCase):
             major            = None,
             main_address     = None,
             sub_address      = None,
-            introduction     = None
+            introduction     = None,
+            social           = SocialPlatform.objects.get(id=1),
+            social_login_id  = '1234'
         )
 
         user_interest = ProfileInterest.objects.create(
