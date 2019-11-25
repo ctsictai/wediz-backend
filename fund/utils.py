@@ -19,7 +19,6 @@ def login_decorator(func):
             user = User.objects.select_related('users').get(id = data["user_id"])
             request.user = user
              
-            print(request.user)
             if user.users.is_agreed == False:
                 return JsonResponse({"ERROR_CODE":"INVALID_MAKER"}, status = 403)
 
@@ -27,9 +26,6 @@ def login_decorator(func):
             return JsonResponse({"ERROR_CODE" : "INVALID_TOKEN"}, status = 401) 
         
         except User.DoesNotExist:
-            return JsonResponse({"ERROR_CODE" : "UNKNOWN_USER"}, status = 401)
-        except Exception as e:
-            print(e)
             return JsonResponse({"ERROR_CODE" : "UNKNOWN_USER"}, status = 401)
         
         return func(self, request, *args, **kwargs) 

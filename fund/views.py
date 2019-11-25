@@ -13,11 +13,28 @@ from account.models    import Maker
 
 from .models           import FundProject, FundMainAgreement, Document, FundCategory, FundMainInformation, PolicyDocument, FundPolicy, FundMaker, FundReward
 from .utils            import login_decorator
-aws_s3 = boto3.client(
-                's3', 
-                aws_access_key_id="AKIAUDP7QSUO4ZLJTVGZ",
-                aws_secret_access_key ="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",
-)
+
+class FundDetailView(View):
+
+    def get(self, request, fund_id):
+        detail = FundProject.objects.prefetch_related('fundrewards','fund_main_information').get(id = fund_id)
+        #모델에 FundStory 넣으시고 prefetch_related 에'fund_story' 넣어주고 밑의 주석 해지해주세요 정상실행 될겁니다. 
+
+        result = {
+            "reward": list(detail.fundrewards.values()),
+            # "fundstory_id" : detail.fund_story.id,
+            # "fundstory_context" :  detail.fund_story.context,
+            # "fundstory_summary" : detail.fund_story.summary,
+            # "fundstory_images": list(detail.fund_story.storyphotos.values()),
+            "title": detail.fund_main_information.title,
+            "targetGoad":detail.fund_main_information.goal_money,
+            "mainImage":detail.fund_main_information.main_image,
+            "category":detail.fund_main_information.category.name,
+            "endDate":detail.fund_main_information.deadline,
+        }
+
+        
+        return JsonResponse({"data" : result}, status = 200)
 
 class MainInformation(View):
     @login_decorator

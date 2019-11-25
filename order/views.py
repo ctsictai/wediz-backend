@@ -65,28 +65,30 @@ class OrderView(View):
     @login_decorator
     def get(self, request):
         user          = request.user
-        data          = list(Order.objects.prefetch_related('basket').filter(user = user))
+        data          = list(Order.objects.filter(user = user))
+
         try :
             basket = [
                 {   
-                    "user"          : result.name,
-                    "basket"         : result.basket.id,
-                    "delivery_name"      : result.quantity,
-                    "delivery_number"       : result.sponser,
-                    "delivery_address"  : result.rewards.delivery_fee,
-                    "delivery_request"     : result.user.user_name,
-                    # "card_number"         : result.user.email,
-                    # "card_period"          : result.name,
-                    # "basket"         : result.basket.sponser,
-                    # "delivery_name"      : result.quantity,
-                    # "delivery_number"       : result.sponser,
-                    # "delivery_address"  : result.rewards.delivery_fee,
-                    # "delivery_request"     : result.user.user_name,
-                    "email"         : result.user.email,
-
-                    "phone_number"  : result.user.phone_number
+                    "user_name"             : result.user.user_name,
+                    "phone_number"          : result.user.phone_number,
+                    "email"                 : result.user.email,
+                    "name"                  : result.reward.name,
+                    "price"                 : result.reward.price,
+                    "delivery_fee"          : result.reward.delivery_fee,
+                    "scheduled_date"        : result.reward.scheduled_date,
+                    "option"                : result.reward.option,
+                    "delivery_name"         : result.delivery_name,
+                    "delivery_number"       : result.delivery_number,
+                    "delivery_address"      : result.delivery_address,
+                    "delivery_request"      : result.delivery_request,
+                    "card_number"           : result.card_number,
+                    "card_period"           : result.card_period,
+                    "card_password"         : result.card_password,
+                    "card_birthday"         : result.card_birthday
                 }
             for result in data ]
+
             return JsonResponse({"data":basket}, status=200)
         except KeyError:
             return JsonResponse({"error":"KeyError"}, status = 401)
@@ -96,12 +98,12 @@ class OrderView(View):
     def post(self, request):
         user           = request.user
         data           = json.loads(request.body)
-
         try:
             order_info = [
                 Order(
                     user                    = user,
                     basket                  = Basket.objects.get(id = data['id']),
+                    reward                  = FundReward.objects.prefetch_related('basket_reward').get(id = data['reward']),
                     is_support_agreed       = data['is_support_agreed'],
                     delivery_name           = data['delivery_name'],
                     delivery_number         = data['delivery_number'],
@@ -113,12 +115,15 @@ class OrderView(View):
                     card_birthday           = data['card_birthday'],
                     is_agreed               = data['is_agreed']
                     ) for data in data["data"]]
-            Order.objects.bulk_create(order_info)
+            a = Order.objects.bulk_create(order_info)
+            for count in a:
+                for data in FundReward.objects.select_for_update().filter(id = count.reward.id):
+                    ordered_item = Order.basket.get_queryset(user = user)
+                    for ordered_items in ordered_item:
+                        data.stock = ordered_items.rewards.stock - ordered_items.quantity
+            data.save()
 
-            ordered_item = Basket.objects.filter(user = user)
-            minus_stock= [ 
-                Basket(                                   )
-            for data in ordered_item]
+            Basket.objects.filter(user = user).delete()
 
             return JsonResponse({"MESSAGE":"SUCCESS"}, status=200)
         except KeyError:
