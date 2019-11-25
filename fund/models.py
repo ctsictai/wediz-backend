@@ -21,7 +21,6 @@ class FundMainAgreement(models.Model):
     class Meta:
         db_table = "fundmainagreements"
 
-
 class FundCategory(models.Model):
     name = models.CharField(max_length = 100, null=True)
 
@@ -82,6 +81,7 @@ class FundMaker(models.Model):
     class Meta:
         db_table = "fundmakers"
 
+
 class FundProject(models.Model):
     fund_main_agreement      = models.OneToOneField(FundMainAgreement, on_delete = models.CASCADE)
     fund_main_information    = models.OneToOneField(FundMainInformation, on_delete = models.CASCADE)
@@ -94,10 +94,15 @@ class FundProject(models.Model):
 
 
 class FundReward(models.Model):
-    title = models.CharField(max_length = 200, null = True)
-    price = models.IntegerField(null= True)
-    introduction = models.CharField(max_length = 300, null = True)
-    limitation = models.IntegerField(null = True)
-
+    seller_product_number = models.SmallIntegerField(null=True)
+    name                  = models.CharField(max_length = 200, null = True)
+    price                 = models.IntegerField(null= True)
+    introduction          = models.CharField(max_length = 300, null = True)
+    stock                 = models.IntegerField(null = True)
+    delivery_fee          = models.IntegerField(null=True) 
+    scheduled_date        = models.CharField(max_length=50, null=True)
+    option                = models.CharField(max_length=50, null=True)
+    maker                 = models.ForeignKey(Maker, on_delete = models.CASCADE, related_name = 'makers')
+    project               = models.ForeignKey(FundProject, on_delete = models.CASCADE, related_name = 'fundrewards')
     class Meta:
         db_table = "fundrewards"

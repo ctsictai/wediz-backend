@@ -226,4 +226,4 @@ class MakerCreate(View):
         except KeyError:
             return JsonResponse({"MESSAGE" : "INVALID_INPUT"}, status=400)
         except IntegrityError:
-            return JsonResponse({"MESSAGE" : "USER_IS_ALREADY_MAKER(DUPLICATED)"}, status=409)
+            return JsonResponse({"MESSAGE" : "USER_IS_ALREADY_MAKER( )"}, status=409)

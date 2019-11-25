@@ -6,21 +6,42 @@ import boto3
 
 from django.views      import View
 from django.http       import JsonResponse, HttpResponse
+from django.db         import transaction
+
 from my_settings       import WEDIZ_SECRET
 from account.models    import Maker
-from .models           import FundProject, FundMainAgreement, Document, FundCategory, FundMainInformation, PolicyDocument, FundPolicy, FundMaker
+
+from .models           import FundProject, FundMainAgreement, Document, FundCategory, FundMainInformation, PolicyDocument, FundPolicy, FundMaker, FundReward
 from .utils            import login_decorator
-aws_s3 = boto3.client(
-                's3', 
-                aws_access_key_id="AKIAUDP7QSUO4ZLJTVGZ",
-                aws_secret_access_key ="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",
-)
+
+class FundDetailView(View):
+
+    def get(self, request, fund_id):
+        detail = FundProject.objects.prefetch_related('fundrewards','fund_main_information').get(id = fund_id)
+        #모델에 FundStory 넣으시고 prefetch_related 에'fund_story' 넣어주고 밑의 주석 해지해주세요 정상실행 될겁니다. 
+
+        result = {
+            "reward": list(detail.fundrewards.values()),
+            # "fundstory_id" : detail.fund_story.id,
+            # "fundstory_context" :  detail.fund_story.context,
+            # "fundstory_summary" : detail.fund_story.summary,
+            # "fundstory_images": list(detail.fund_story.storyphotos.values()),
+            "title": detail.fund_main_information.title,
+            "targetGoad":detail.fund_main_information.goal_money,
+            "mainImage":detail.fund_main_information.main_image,
+            "category":detail.fund_main_information.category.name,
+            "endDate":detail.fund_main_information.deadline,
+        }
+
+        
+        return JsonResponse({"data" : result}, status = 200)
 
 class MainInformation(View):
     @login_decorator
     def get(self, request):
         return JsonResponse({"data":list(FundMainInformation.objects.values())}, status = 200)
 
+    @transaction.atomic
     @login_decorator
     def post(self, request):
         user = request.user
@@ -50,6 +71,7 @@ class MainAgreement(View):
     def get(self, request):
         return JsonResponse({"data":list(FundMainAgreement.objects.values())}, status = 200)
 
+    @transaction.atomic
     @login_decorator
     def post(self, request):
         user = request.user
@@ -70,6 +92,8 @@ class MainAgreement(View):
             return JsonResponse({"message":"SUCCESS"}, status = 200)
         except KeyError:
             return JsonResponse({"error":"KeyError"}, status = 401)
+        except ValueError:
+            return JsonResponse({"message":"ValueError"}, status = 401)
 
 
 class FundPolicyView(View):
@@ -77,6 +101,7 @@ class FundPolicyView(View):
     def get(self, request):
         return JsonResponse({"data":list(FundPolicy.objects.values())}, status = 200)
 
+    @transaction.atomic
     @login_decorator
     def post(self, request):
         user = request.user        
@@ -99,6 +124,8 @@ class FundPolicyView(View):
             return JsonResponse({"message":"SUCCESS"}, status = 200)
         except KeyError:
             return JsonResponse({"error":"KEYERROR"}, status = 401)
+        except ValueError:
+            return JsonResponse({"message":"ValueError"}, status = 401)
 
 
 class FundMakerView(View):
@@ -106,6 +133,7 @@ class FundMakerView(View):
     def get(self, request):
         return JsonResponse({"data":list(FundMaker.objects.values())}, status = 200)
 
+    @transaction.atomic
     @login_decorator    
     def post(self, request):
         user = request.user        
@@ -131,6 +159,8 @@ class FundMakerView(View):
 
         except KeyError:
             return JsonResponse({"error":"KeyError"}, status = 401)
+        except ValueError:
+            return JsonResponse({"message":"ValueError"}, status = 401)
 
 
 class FundProjectView(View):
@@ -139,7 +169,7 @@ class FundProjectView(View):
         data = list(FundProject.objects.values())
         return JsonResponse({"data":data}, status=200)
 
-
+    @transaction.atomic
     @login_decorator
     def post(self, request):
         user = request.user
@@ -170,3 +200,44 @@ class FundProjectView(View):
             return JsonResponse({"MESSAGE":"SUCCESS"}, status=200)
         except KeyError:
             return JsonResponse({"error":"KeyError"}, status = 401)
+        except ValueError:
+            return JsonResponse({"message":"ValueError"}, status = 401)
+
+
+class RewardView(View):
+    @login_decorator
+    def get(self, request):
+        user          = request.user
+        data = list(FundReward.objects.filter(maker = user.users).values())
+        return JsonResponse({"data":data}, status=200)
+
+    @transaction.atomic
+    @login_decorator
+    def post(self, request):
+        user          = request.user
+        data          = json.loads(request.body)
+
+        try:
+            FundReward.objects.filter(maker = user.users).delete()
+            print(data["data"])
+            
+            fund_rewards = [
+                FundReward(
+                    seller_product_number = count,
+                    name                  = data['name'],
+                    price                 = data['price'],
+                    introduction          = data['introduction'],
+                    stock                 = data['stock'],
+                    scheduled_date        = data['scheduled_date'],
+                    option                = data['option'],
+                    maker                 = user.users,
+                    project               = FundProject.objects.get(maker = user.users)
+            ) for count, data in enumerate(data["data"], 1)]
+
+            FundReward.objects.bulk_create(fund_rewards)
+
+            return JsonResponse({"MESSAGE":"SUCCESS"}, status=200)
+        except KeyError:
+            return JsonResponse({"error":"KeyError"}, status = 401)
+        except ValueError:
+            return JsonResponse({"message":"ValueError"}, status = 401)
