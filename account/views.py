@@ -9,10 +9,11 @@ from django.http               import JsonResponse
 from django.views              import View
 from django.core.validators    import validate_email
 from django.core.exceptions    import ValidationError
+from django.db                 import IntegrityError
 
 from fund.models               import Maker
 from .models                   import User, UserGetInterest, ProfileInterest, SocialPlatform, Maker
-from my_settings               import WEDIZ_SECRET
+from my_settings               import WEDIZ_SECRET, aws_s3
 from .utils                    import login_decorator
 
 class SignupView(View):
@@ -28,12 +29,13 @@ class SignupView(View):
 				hashed_password = bcrypt.hashpw(byted_password, bcrypt.gensalt())
 				decode_password = hashed_password.decode('utf-8')
 				user = User.objects.create(
-						email     = user_data["email"],
-						user_name = user_data["user_name"],
-						password  = decode_password,
-						is_agree  = user_data["is_agree"],
-						promotion = user_data["promotion"],
-						is_maker  = False
+						email        = user_data["email"],
+						user_name    = user_data["user_name"],
+						password     = decode_password,
+						is_agree     = user_data["is_agree"],
+						promotion    = user_data["promotion"],
+                        phone_number = user_data['phone_number'], 
+						is_maker     = False
 						)
 				default_interest = ProfileInterest.objects.create(
 					education_kids       = False,
@@ -175,18 +177,13 @@ class ModifiedUserInfo(View):
             return JsonResponse({"MESSAGE" : "INVALID_VALUE"}, status=401)
 
 class ModifiedUserPhoto(View):
-    aws_s3 = boto3.client(
-                's3',
-                aws_access_key_id="AKIAUDP7QSUO4ZLJTVGZ",
-                aws_secret_access_key ="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",
-            )
     @login_decorator
     def post(self,request):
         if request.FILES['photo']:
             user = request.user
             extension = request.FILES['photo'].name.split('.')[-1]
             file_name = str(user.id)+"."+extension
-            self.aws_s3.upload_fileobj(
+            aws_s3.upload_fileobj(
                 request.FILES['photo'],
                 "wedizprofile", 
                 file_name,
@@ -194,7 +191,7 @@ class ModifiedUserPhoto(View):
                     "ContentType" : request.FILES['photo'].content_type
                 }
             )
-            photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizprofile"+file_name
+            photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizprofile"+"-"+file_name
             user.profile_photo = photo_url
             user.save()
 
@@ -206,8 +203,11 @@ class MakerCreate(View):
     @login_decorator
     def get(self, request):
         user = request.user
-        maker = Maker.objects.filter(user = user).values()
-        return JsonResponse({"data": list(maker)}, status=200)
+        data = [{
+            "user_name" : user.user_name,
+            "user_email" : user.email
+        }]
+        return JsonResponse({"data": data}, status=200)
 
     @login_decorator
     def post(self, request):
@@ -227,3 +227,18 @@ class MakerCreate(View):
             return JsonResponse({"MESSAGE" : "INVALID_INPUT"}, status=400)
         except IntegrityError:
             return JsonResponse({"MESSAGE" : "USER_IS_ALREADY_MAKER( )"}, status=409)
+
+class MakerInfoView(View):
+    @login_decorator
+    def get(self, request):
+        user = request.user
+        maker = Maker.objects.get(user = user)
+        data = [{
+            "name" : maker.name,
+            "kind" : maker.kind,
+            "phone_number" : maker.phone_number,
+            "is_agreed" : maker.is_agreed,
+            "user_name" : maker.user.user_name,
+            "user_email" : maker.user.email
+        }]
+        return JsonResponse({"DATA": data}, status=200)
