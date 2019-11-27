@@ -6,9 +6,17 @@ from my_settings            import WEDIZ_SECRET
 from django.test     import TestCase, Client
 from unittest.mock          import patch, MagicMock
 from fund.views      import *
-from fund.models     import FundProject, FundMainAgreement, Document, FundMainInformation, FundCategory
+from fund.models     import FundProject, FundMainAgreement, Document, FundMainInformation, FundCategory, FundStory, StoryPhoto
 from account.models  import User, ProfileInterest, UserGetInterest, Maker, SocialPlatform
 
+def create_image(storage, filename, size=(30,30), image_mode = 'RGB', image_format='PNG'):
+    data = BytesIO()
+    Image.new(image_mode, size).save(data, image_format)
+    data.seek(0)
+    if not storage:
+        return data
+    image_file = ContentFile(data.read())
+    return storage.save(filename, image_file)
 
 password = '1234'
 byted_password  = bytes(password, encoding='utf-8')
@@ -135,7 +143,18 @@ class FundProjectTest (TestCase):
                 sns2                  = "라인",
                 sns3                  = "페북",
                 maker                 = maker
+        )
+        fundstory = FundStory.objects.create(
+                id            = 1,
+                summary       = 'fs2',
+                is_agreed     = True,
+                context       = 'cpm',
+                maker         = maker
+        )
 
+        storyphoto = StoryPhoto.objects.create(
+                id         = fundstory.id,
+                photo      = "awss3"
         )
 
         fundproject = FundProject.objects.create(

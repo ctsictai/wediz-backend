@@ -27,6 +27,7 @@ class User(models.Model):
     is_agree         = models.BooleanField(null=True)
     is_maker         = models.BooleanField(null=True)
     promotion        = models.BooleanField(null=True)
+    phone_number     = models.CharField(max_length=20, null=True)
     social           = models.ForeignKey(SocialPlatform, on_delete=models.CASCADE, null=True, related_name='user_social', default=1)
     social_login_id  = models.CharField(max_length=100, null=True)
     profile_photo    = models.URLField(max_length=500, null=True, blank=True)

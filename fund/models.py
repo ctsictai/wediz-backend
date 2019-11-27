@@ -81,6 +81,21 @@ class FundMaker(models.Model):
     class Meta:
         db_table = "fundmakers"
 
+class FundStory(models.Model):
+    summary    = models.CharField(max_length=400, null=True)
+    is_agreed  = models.BooleanField(null=True, default=False)
+    context    = models.CharField(max_length =3000, null=True)
+    maker      = models.ForeignKey(Maker, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'fundstories'
+
+class StoryPhoto(models.Model):
+    fund_story = models.ForeignKey(FundStory, on_delete=models.CASCADE,related_name='storyphotos')
+    photo      = models.URLField(max_length=500, null=True)
+
+    class Meta:
+        db_table = 'storyphotos'
 
 class FundProject(models.Model):
     fund_main_agreement      = models.OneToOneField(FundMainAgreement, on_delete = models.CASCADE)
@@ -88,10 +103,10 @@ class FundProject(models.Model):
     fund_policies            = models.OneToOneField(FundPolicy, on_delete = models.CASCADE)
     fund_makers              = models.OneToOneField(FundMaker, on_delete = models.CASCADE)
     maker                    = models.ForeignKey(Maker, on_delete = models.CASCADE)
+    fund_story               = models.OneToOneField(FundStory, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "fundprojects"
-
 
 class FundReward(models.Model):
     seller_product_number = models.SmallIntegerField(null=True)
