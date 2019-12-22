@@ -191,7 +191,7 @@ class ModifiedUserPhoto(View):
                     "ContentType" : request.FILES['photo'].content_type
                 }
             )
-            photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizprofile"+"-"+file_name
+            photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizprofile/"+file_name
             user.profile_photo = photo_url
             user.save()
 
@@ -214,6 +214,7 @@ class MakerCreate(View):
         data = json.loads(request.body)
         try:
             request.user.is_maker = True
+            request.user.save()
             Maker.objects.create(
                 user            = request.user,
                 name            = data['name'],

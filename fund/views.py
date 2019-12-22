@@ -254,15 +254,15 @@ class StoryMainImage(View):
                             "ContentType" : request.FILES['photo'].content_type
                         }
                     )
-                    photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizstoryimage"+"-"+file_name
+                    photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizstoryimage/"+file_name
                     StoryPhoto(photo = photo_url, fund_story=fund_story).save()
-                urls = f"""https://s3.ap-northeast-2.amazonaws.com/wedizstoryimage-{str(user.id)}-{request.FILES.getlist('photo')[0].name}"""
+                urls = f"""https://s3.ap-northeast-2.amazonaws.com/wedizstoryimage/{str(user.id)}-{request.FILES.getlist('photo')[0].name}"""
                 fund_info.main_image = urls
                 fund_info.save()
                 return JsonResponse({"MESSAGE" : "SUCCESS"}, status=200)
             else:
                 file_name = str(user.id)+"-"+request.FILES['photo'].name
-                self.aws_s3.upload_fileobj(
+                aws_s3.upload_fileobj(
                     request.FILES['photo'],
                     "wedizstoryimage",
                     file_name,
@@ -270,7 +270,7 @@ class StoryMainImage(View):
                         "ContentType" : request.FILES['photo'].content_type
                     }
                 )
-                photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizstoryimage"+file_name
+                photo_url = "https://s3.ap-northeast-2.amazonaws.com/wedizstoryimage/"+file_name
                 StoryPhoto(photo = photo_url, fund_story=fund_story).save()
                 fund_info.main_image = photo_url
                 fund_info.save()

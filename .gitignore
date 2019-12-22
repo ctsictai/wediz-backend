@@ -202,4 +202,5 @@ tags
 # End of https://www.gitignore.io/api/vim,linux,python,django
 
 my_settings.py
+Dockerfile
 
